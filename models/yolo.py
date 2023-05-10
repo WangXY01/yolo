@@ -779,6 +779,10 @@ def parse_model(d, ch):  # model_dict, input_channels(3)
                 n = 1
         elif m is nn.BatchNorm2d:
             args = [ch[f]]
+        elif m is MobileOneBlock:
+            c1, c2 = ch[f], args[0]
+            c2 = make_divisible(c2 * gw, 8)
+            args = [c1, c2, n, *args[1:]]
         elif m is Concat:
             c2 = sum([ch[x] for x in f])
         elif m is Chuncat:
