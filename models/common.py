@@ -2018,6 +2018,52 @@ class ST2CSPC(nn.Module):
 
 ##### end of swin transformer v2 ##### 
 # 2023.05.10增加MobileOne模块
+# mobileone
+def conv_bn(in_channels, out_channels, kernel_size, stride, padding, groups=1):
+    result = nn.Sequential()
+    result.add_module(
+        "conv",
+        nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=out_channels,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            groups=groups,
+            bias=False,
+        ),
+    )
+    result.add_module("bn", nn.BatchNorm2d(num_features=out_channels))
+    return result
+
+
+class DepthWiseConv(nn.Module):
+    def __init__(self, inc, kernel_size, stride=1):
+        super().__init__()
+        padding = 1
+        if kernel_size == 1:
+            padding = 0
+        # self.conv = nn.Sequential(
+        #     nn.Conv2d(inc, inc, kernel_size, stride, padding, groups=inc, bias=False,),
+        #     nn.BatchNorm2d(inc),
+        # )
+        self.conv = conv_bn(inc, inc, kernel_size, stride, padding, inc)
+
+    def forward(self, x):
+        return self.conv(x)
+
+
+class PointWiseConv(nn.Module):
+    def __init__(self, inc, outc):
+        super().__init__()
+        # self.conv = nn.Sequential(
+        #     nn.Conv2d(inc, outc, 1, 1, 0, bias=False),
+        #     nn.BatchNorm2d(outc),
+        # )
+        self.conv = conv_bn(inc, outc, 1, 1, 0)
+
+    def forward(self, x):
+        return self.conv(x)
 class MobileOneBlock(nn.Module):
     def __init__(
         self,
