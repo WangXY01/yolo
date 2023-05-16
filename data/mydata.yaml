@@ -1,6 +1,7 @@
-train: /content/Fire/new_dfire_train1.txt  # 118287 images
-val: /content/Fire/new_dfire_valid1.txt  # 5000 images
-
+#train: /content/Fire/new_dfire_train1.txt  # 118287 images
+#val: /content/Fire/new_dfire_valid1.txt  # 5000 images
+train: /kaggle/input/d-fire/kaggle_dfire_train1.txt  # 118287 images
+val: /kaggle/input/d-fire/kaggle_dfire_valid1.txt  # 5000 images
 
 # number of classes
 nc: 2
