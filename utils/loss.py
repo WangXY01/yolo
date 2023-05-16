@@ -466,6 +466,7 @@ class ComputeLoss:
                 pwh = (ps[:, 2:4].sigmoid() * 2) ** 2 * anchors[i]
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
                 iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, CIoU=True)  # iou(prediction, target)
+                # iou = bbox_iou(pbox.T, tbox[i], x1y1x2y2=False, SIoU=True)  # iou(prediction, target)
                 lbox += (1.0 - iou).mean()  # iou loss
 
                 # Objectness
@@ -603,6 +604,7 @@ class ComputeLossOTA:
                 pbox = torch.cat((pxy, pwh), 1)  # predicted box
                 selected_tbox = targets[i][:, 2:6] * pre_gen_gains[i]
                 selected_tbox[:, :2] -= grid
+                # iou = bbox_iou(pbox.T, selected_tbox, x1y1x2y2=False, SIoU=True)  # iou(prediction, target)
                 iou = bbox_iou(pbox.T, selected_tbox, x1y1x2y2=False, CIoU=True)  # iou(prediction, target)
                 lbox += (1.0 - iou).mean()  # iou loss
 
@@ -642,7 +644,7 @@ class ComputeLossOTA:
         #indices, anch = self.find_4_positive(p, targets)
         #indices, anch = self.find_5_positive(p, targets)
         #indices, anch = self.find_9_positive(p, targets)
-        device = torch.device(targets.device)
+
         matching_bs = [[] for pp in p]
         matching_as = [[] for pp in p]
         matching_gjs = [[] for pp in p]
@@ -682,7 +684,7 @@ class ComputeLossOTA:
                 all_gj.append(gj)
                 all_gi.append(gi)
                 all_anch.append(anch[i][idx])
-                from_which_layer.append((torch.ones(size=(len(b),)) * i).to(device))
+                from_which_layer.append((torch.ones(size=(len(b),)) * i).to('cuda'))
                 
                 fg_pred = pi[b, a, gj, gi]                
                 p_obj.append(fg_pred[:, 4:5])
@@ -739,7 +741,7 @@ class ComputeLossOTA:
                 + 3.0 * pair_wise_iou_loss
             )
 
-            matching_matrix = torch.zeros_like(cost, device=device)
+            matching_matrix = torch.zeros_like(cost)
 
             for gt_idx in range(num_gt):
                 _, pos_idx = torch.topk(
@@ -753,7 +755,8 @@ class ComputeLossOTA:
                 _, cost_argmin = torch.min(cost[:, anchor_matching_gt > 1], dim=0)
                 matching_matrix[:, anchor_matching_gt > 1] *= 0.0
                 matching_matrix[cost_argmin, anchor_matching_gt > 1] = 1.0
-            fg_mask_inboxes = (matching_matrix.sum(0) > 0.0).to(device)
+            fg_mask_inboxes = matching_matrix.sum(0) > 0.0
+            fg_mask_inboxes = fg_mask_inboxes.to(torch.device('cuda'))
             matched_gt_inds = matching_matrix[:, fg_mask_inboxes].argmax(0)
         
             from_which_layer = from_which_layer[fg_mask_inboxes]
@@ -927,6 +930,7 @@ class ComputeLossBinOTA:
                 
                 
                 iou = bbox_iou(pbox.T, selected_tbox, x1y1x2y2=False, CIoU=True)  # iou(prediction, target)
+                # iou = bbox_iou(pbox.T, selected_tbox, x1y1x2y2=False, SIoU=True)  # iou(prediction, target)
                 lbox += (1.0 - iou).mean()  # iou loss
 
                 # Objectness
@@ -1229,6 +1233,7 @@ class ComputeLossAuxOTA:
                 selected_tbox = targets[i][:, 2:6] * pre_gen_gains[i]
                 selected_tbox[:, :2] -= grid
                 iou = bbox_iou(pbox.T, selected_tbox, x1y1x2y2=False, CIoU=True)  # iou(prediction, target)
+                # iou = bbox_iou(pbox.T, selected_tbox, x1y1x2y2=False, SIoU=True)  # iou(prediction, target)
                 lbox += (1.0 - iou).mean()  # iou loss
 
                 # Objectness
